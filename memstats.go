@@ -8,6 +8,11 @@ import (
 	"runtime"
 )
 
+type Window interface {
+	Render(*runtime.MemStats)
+	Resize()
+}
+
 type Loader interface {
 	Load(context.Context) (*runtime.MemStats, error)
 }
