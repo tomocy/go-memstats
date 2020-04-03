@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"math/rand"
 	"net/http"
-	"os"
 	"runtime"
 	"time"
 
@@ -18,10 +17,9 @@ func init() {
 	rand.Seed(time.Now().UnixNano())
 }
 
-func Run(gen func() Window) error {
+func Run(gen func() Window, loader Loader) error {
 	if err := termui.Init(); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		return fmt.Errorf("failed to init terminal ui: %w", err)
 	}
 	defer termui.Close()
 
@@ -31,7 +29,12 @@ func Run(gen func() Window) error {
 	for {
 		select {
 		case <-ticks:
-			win.Render(new(runtime.MemStats))
+			stats, err := loader.Load(context.Background())
+			if err != nil {
+				return fmt.Errorf("failed to load memory statics: %w", err)
+			}
+
+			win.Render(stats)
 		case e := <-events:
 			switch e.Type {
 			case termui.KeyboardEvent:
@@ -70,7 +73,8 @@ func (g *Grid) init() {
 	)
 }
 
-func (g *Grid) Render(*runtime.MemStats) {
+func (g *Grid) Render(stats *runtime.MemStats) {
+	g.widget.render(stats)
 	termui.Render(g)
 }
 
@@ -107,20 +111,8 @@ func (w *widget) render(stat *runtime.MemStats) {
 }
 
 func (w *widget) updateGCCPUFraction(f float64) {
-	w.gcCPUFraction.Percent = w.normalizeGCCPUFraction(f)
+	w.gcCPUFraction.Percent = int(f * 100)
 	w.gcCPUFraction.Label = fmt.Sprintf("%.2f%%", f*100)
-}
-
-func (w *widget) normalizeGCCPUFraction(f float64) int {
-	if f >= 0.01 {
-		return int(f)
-	}
-
-	for f < 1 {
-		f *= 10
-	}
-
-	return int(f)
 }
 
 type Loader interface {
