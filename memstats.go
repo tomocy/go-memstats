@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"os"
 	"runtime"
@@ -12,6 +13,10 @@ import (
 	"github.com/gizak/termui/v3"
 	"github.com/gizak/termui/v3/widgets"
 )
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
 
 func Run(gen func() Window) error {
 	if err := termui.Init(); err != nil {
@@ -146,4 +151,12 @@ func (l *viaHTTP) Load(ctx context.Context) (*runtime.MemStats, error) {
 	}
 
 	return loaded.Stats, nil
+}
+
+type RandomLoader struct{}
+
+func (l *RandomLoader) Load(context.Context) (*runtime.MemStats, error) {
+	return &runtime.MemStats{
+		GCCPUFraction: rand.Float64(),
+	}, nil
 }
