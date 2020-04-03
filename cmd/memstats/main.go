@@ -10,7 +10,7 @@ import (
 func main() {
 	if err := memstats.Run(func() memstats.Window {
 		return memstats.NewGrid()
-	}); err != nil {
+	}, new(memstats.RandomLoader)); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
